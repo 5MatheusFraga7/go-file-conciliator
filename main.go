@@ -2,46 +2,51 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
+	"strconv"
 )
 
 func main() {
 	internalData := getFileData("data1.csv")
 	externalData := getFileData("data2.csv")
 
-	err := writeCSV("diff.csv", diffFiles(internalData, externalData))
-	if err != nil {
-		fmt.Println("Erro ao escrever no arquivo CSV:", err)
-		return
-	}
-	fmt.Println("Dados foram escritos com sucesso no arquivo diff.csv")
+	dataDiff := getBynaryFileDiff(internalData, externalData)
 
+	writeCSV("output_diff.csv", dataDiff)
 }
 
-func diffFiles(baseA [][]string, baseB [][]string) [][]string {
-	presenceB := make(map[string]bool)
-	for _, row := range baseB {
-		for _, val := range row {
-			presenceB[val] = true
-		}
-	}
+func getBynaryFileDiff(internalData [][]string, externalData [][]string) [][]string {
 
 	diff := [][]string{}
-	for _, row := range baseA {
-		isDifferent := false
-		for _, val := range row {
-			if !presenceB[val] {
-				isDifferent = true
-				break
-			}
+
+	for i := 0; i < len(internalData); i++ {
+		if !binarySearch(internalData, externalData[i][0]) {
+			diff = append(diff, internalData[i])
 		}
-		if isDifferent {
-			diff = append(diff, row)
+	}
+	return diff
+}
+
+func binarySearch(array [][]string, value string) bool {
+
+	left := 0
+	right := len(array) - 1
+
+	for left <= right {
+		mid := left + (right-left)/2
+		num, _ := strconv.Atoi(array[mid][0])
+		target, _ := strconv.Atoi(value)
+
+		if num == target {
+			return true
+		} else if target < num {
+			right = mid - 1
+		} else {
+			left = mid + 1
 		}
 	}
 
-	return diff
+	return false
 }
 
 func writeCSV(filename string, data [][]string) error {

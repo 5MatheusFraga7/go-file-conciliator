@@ -59,3 +59,28 @@ func concilia(array [][]string, i int, result []string) []string {
 		return concilia(array, i+1, result)
 	}
 }
+
+func diffFiles(baseA [][]string, baseB [][]string) [][]string {
+	presenceB := make(map[string]bool)
+	for _, row := range baseB {
+		for _, val := range row {
+			presenceB[val] = true
+		}
+	}
+
+	diff := [][]string{}
+	for _, row := range baseA {
+		isDifferent := false
+		for _, val := range row {
+			if !presenceB[val] {
+				isDifferent = true
+				break
+			}
+		}
+		if isDifferent {
+			diff = append(diff, row)
+		}
+	}
+
+	return diff
+}

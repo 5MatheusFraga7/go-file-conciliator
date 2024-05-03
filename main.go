@@ -4,11 +4,34 @@ import (
 	"encoding/csv"
 	"os"
 	"strconv"
+	"sync"
 )
 
 func main() {
-	internalData := getFileData("data1.csv")
-	externalData := getFileData("data2.csv")
+	internalData := [][]string{
+		{"1"},
+		{"2"},
+		{"3"},
+		{"4"},
+		{"5"},
+		{"6"},
+		{"7"},
+		{"8"},
+		{"19"},
+		{"20"},
+	}
+	externalData := [][]string{
+		{"1"},
+		{"2"},
+		{"3"},
+		{"4"},
+		{"5"},
+		{"6"},
+		{"7"},
+		{"8"},
+		{"9"},
+		{"10"},
+	}
 
 	dataDiff := getBynaryFileDiff(internalData, externalData)
 
@@ -16,26 +39,41 @@ func main() {
 }
 
 func getBynaryFileDiff(internalData [][]string, externalData [][]string) [][]string {
-
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 	diff := [][]string{}
 
+	maxGoroutines := 100
+	goroutines := make(chan struct{}, maxGoroutines)
+
 	for i := 0; i < len(internalData); i++ {
-		if !binarySearch(internalData, externalData[i][0]) {
-			diff = append(diff, internalData[i])
-		}
+		wg.Add(1)
+		goroutines <- struct{}{}
+
+		go func(idx int) {
+			defer wg.Done()
+			defer func() { <-goroutines }()
+
+			if !binarySearch(internalData[idx], externalData) {
+				mu.Lock()
+				diff = append(diff, internalData[idx])
+				mu.Unlock()
+			}
+		}(i)
 	}
+	wg.Wait()
 	return diff
 }
 
-func binarySearch(array [][]string, value string) bool {
-
+func binarySearch(value []string, array [][]string) bool {
 	left := 0
 	right := len(array) - 1
+
+	target, _ := strconv.Atoi(value[0])
 
 	for left <= right {
 		mid := left + (right-left)/2
 		num, _ := strconv.Atoi(array[mid][0])
-		target, _ := strconv.Atoi(value)
 
 		if num == target {
 			return true
